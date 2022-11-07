@@ -64,6 +64,7 @@ class User {
     if (!user) throw new NotFoundError(`No such username: ${username}`);
   }
 
+
   /** All: basic info on all users:
    * [{username, first_name, last_name}, ...] */
 
@@ -99,6 +100,7 @@ class User {
     return user;
   }
 
+
   /** Return messages from this user.
    *
    * [{id, to_user, body, sent_at, read_at}]
@@ -109,22 +111,35 @@ class User {
 
   static async messagesFrom(username) {
     const result = await db.query(
-      `SELECT m.id, m.body, m.sent_at, m.read_at, (ut.username, ut.first_name, ut.last_name, ut.phone) AS to_user
+      `SELECT m.id, m.body, m.sent_at, m.read_at, 
+        u.username, u.first_name, u.last_name, u.phone
           FROM messages AS m
-          JOIN users AS uf
-              ON (m.from_username = uf.username)
-          JOIN users as ut
-              ON (m.to_username = ut.username)
+          JOIN users as u
+              ON (m.to_username = u.username)
           WHERE m.from_username = $1`,
       [username]);
 
-    const messages = result.rows;
+    const messages = result.rows.map(r => {
+      return {
+        id: r.id,
+        to_user: {
+          username: r.username,
+          first_name: r.first_name,
+          last_name: r.last_name,
+          phone: r.phone
+        },
+        body: r.body,
+        sent_at: r.sent_at,
+        read_at: r.read_at
+      }
+    });
 
     if (!messages) throw new NotFoundError(`No such username: ${username}`);
 
     return messages;
   }
 
+  
   /** Return messages to this user.
    *
    * [{id, from_user, body, sent_at, read_at}]
@@ -147,10 +162,10 @@ class User {
       return {
         id: r.id,
         from_user: {
-        username: r.username,
-        first_name: r.first_name,
-        last_name: r.last_name,
-        phone: r.phone
+          username: r.username,
+          first_name: r.first_name,
+          last_name: r.last_name,
+          phone: r.phone
         },
         body: r.body,
         sent_at: r.sent_at,
@@ -160,7 +175,7 @@ class User {
 
     if (!messages) throw new NotFoundError(`No such username: ${username}`);
 
-    return messages
+    return messages;
   }
 }
 
