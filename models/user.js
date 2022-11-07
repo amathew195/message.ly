@@ -135,21 +135,32 @@ class User {
 
   static async messagesTo(username) {
 
-    const result = await db.query(
-      `SELECT m.id, m.body, m.sent_at, m.read_at, (uf.username, uf.first_name, uf.last_name, uf.phone) AS from_user
+    const results = await db.query(
+      `SELECT m.id, m.body, m.sent_at, m.read_at, u.username, u.first_name, u.last_name, u.phone
           FROM messages AS m
-          JOIN users AS ut
-              ON (m.to_username = ut.username)
-          JOIN users as uf
-              ON (m.from_username = uf.username)
+          JOIN users as u
+              ON (m.from_username = u.username)
           WHERE m.to_username = $1`,
       [username]);
 
-    const messages = result.rows;
+    const messages = results.rows.map(r => {
+      return {
+        id: r.id,
+        from_user: {
+        username: r.username,
+        first_name: r.first_name,
+        last_name: r.last_name,
+        phone: r.phone
+        },
+        body: r.body,
+        sent_at: r.sent_at,
+        read_at: r.read_at
+      };
+    });
 
     if (!messages) throw new NotFoundError(`No such username: ${username}`);
 
-    return messages;
+    return messages
   }
 }
 
