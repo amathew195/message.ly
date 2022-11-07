@@ -1,6 +1,7 @@
 "use strict";
 
-const bcrypt = require('bcrypt')
+const bcrypt = require('bcrypt');
+const db = require('../db');
 
 /** User of the site. */
 
@@ -81,6 +82,17 @@ class User {
    *          last_login_at } */
 
   static async get(username) {
+    const result = await db.query(
+      `SELECT username, first_name, last_name, phone, join_at, last_login_at
+      FROM users
+      WHERE username = $1`,
+      [username]
+    );
+    const user = result.rows[0];
+
+    if (!user) throw new NotFoundError(`No such username: ${username}`);
+
+    return user;
   }
 
   /** Return messages from this user.
@@ -92,6 +104,33 @@ class User {
    */
 
   static async messagesFrom(username) {
+    
+    // const messagesResult = await db.query(
+    //   `SELECT m.id, m.body, m.sent_at, m.read_at, 
+    //     to_user 
+    //     FROM messages AS m
+    //     JOIN users AS u ON m.from_username = u.username
+    //         FROM (SELECT username, first_name, last_name, phone
+    //           FROM users
+    //           WHERE username = m.to_username) AS SUBQUERY
+    //     WHERE u.username = $1`,
+    //   [username]
+    // );
+
+    // const message = messagesResult.rows;
+
+
+
+    // const userResult = await db.query(
+    //   `SELECT username, first_name, last_name, phone
+    //   FROM users
+    //   WHERE username = $1`,
+    //   []
+    // );
+    // const to_user = userResult.rows[0];
+
+    // return {message}
+
   }
 
   /** Return messages to this user.
