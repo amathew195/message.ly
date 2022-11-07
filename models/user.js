@@ -1,7 +1,9 @@
 "use strict";
 
 const bcrypt = require('bcrypt');
+const { NotFoundError } = require("../expressError");
 const db = require('../db');
+const { SECRET_KEY, BCRYPT_WORK_FACTOR } = require("../config");
 
 /** User of the site. */
 
@@ -13,18 +15,20 @@ class User {
 
   static async register({ username, password, first_name, last_name, phone }) {
 
-      const result = await db.query(
-        `INSERT INTO users (username,
+    const hashedPassword = await bcrypt.hash(password, BCRYPT_WORK_FACTOR);
+    const result = await db.query(
+      `INSERT INTO users (username,
           password,
           first_name,
           last_name,
-          phone)
+          phone,
+          join_at,
+          last_login_at)
           VALUES
-          ($1, $2, $3, $4, $5)
+          ($1, $2, $3, $4, $5, current_timestamp, current_timestamp)
           RETURNING username, password, first_name, last_name, phone`,
-          [username, password, first_name, last_name, phone]
-      );
-
+      [username, hashedPassword, first_name, last_name, phone]
+    );
 
     return result.rows[0];
   }
@@ -40,8 +44,8 @@ class User {
     );
     const user = result.rows[0];
 
-    if (user){
-      return (await bcrypt.compare(password, user.password) === true);
+    if (user) {
+      return await bcrypt.compare(password, user.password) === true;
     }
   }
 
@@ -67,7 +71,7 @@ class User {
     const results = await db.query(
       `SELECT username, first_name, last_name
       FROM users`
-    )
+    );
     const users = results.rows;
     return users;
   }
@@ -104,33 +108,21 @@ class User {
    */
 
   static async messagesFrom(username) {
-    
-    // const messagesResult = await db.query(
-    //   `SELECT m.id, m.body, m.sent_at, m.read_at, 
-    //     to_user 
-    //     FROM messages AS m
-    //     JOIN users AS u ON m.from_username = u.username
-    //         FROM (SELECT username, first_name, last_name, phone
-    //           FROM users
-    //           WHERE username = m.to_username) AS SUBQUERY
-    //     WHERE u.username = $1`,
-    //   [username]
-    // );
+    const result = await db.query(
+      `SELECT m.id, m.body, m.sent_at, m.read_at, (ut.username, ut.first_name, ut.last_name, ut.phone) AS to_user
+          FROM messages AS m
+          JOIN users AS uf
+              ON (m.from_username = uf.username)
+          JOIN users as ut
+              ON (m.to_username = ut.username)
+          WHERE m.from_username = $1`,
+      [username]);
 
-    // const message = messagesResult.rows;
+    const messages = result.rows;
 
-//git check
+    if (!messages) throw new NotFoundError(`No such username: ${username}`);
 
-    // const userResult = await db.query(
-    //   `SELECT username, first_name, last_name, phone
-    //   FROM users
-    //   WHERE username = $1`,
-    //   []
-    // );
-    // const to_user = userResult.rows[0];
-
-    // return {message}
-
+    return messages;
   }
 
   /** Return messages to this user.
@@ -142,6 +134,22 @@ class User {
    */
 
   static async messagesTo(username) {
+
+    const result = await db.query(
+      `SELECT m.id, m.body, m.sent_at, m.read_at, (uf.username, uf.first_name, uf.last_name, uf.phone) AS from_user
+          FROM messages AS m
+          JOIN users AS ut
+              ON (m.to_username = ut.username)
+          JOIN users as uf
+              ON (m.from_username = uf.username)
+          WHERE m.to_username = $1`,
+      [username]);
+
+    const messages = result.rows;
+
+    if (!messages) throw new NotFoundError(`No such username: ${username}`);
+
+    return messages;
   }
 }
 
