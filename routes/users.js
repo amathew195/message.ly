@@ -15,7 +15,7 @@ const { ensureCorrectUser, ensureLoggedIn } = require("../middleware/auth");
 
 router.get("/", ensureLoggedIn, async function (req, res, next) {
   const users = await User.all();
-  return res.json(users);
+  return res.json({users});
 });
 
 
@@ -28,7 +28,9 @@ router.get("/", ensureLoggedIn, async function (req, res, next) {
 router.get("/:username", ensureCorrectUser, async function (req, res, next) {
   const username = req.params.username;
   const user = await User.get(username);
-  return res.json(user);
+  console.log(user.join_at, "<<<<<<<<<<<<<<<JOIN")
+  console.log(typeof user.join_at, "<<<<<<<<<Type")
+  return res.json({user});
 });
 
 
@@ -45,7 +47,7 @@ router.get("/:username", ensureCorrectUser, async function (req, res, next) {
 router.get("/:username/to", ensureCorrectUser, async function (req, res, next) {
   const username = req.params.username;
   const messages = await User.messagesTo(username);
-  return res.json(messages);
+  return res.json({messages});
 });
 
 
@@ -62,7 +64,7 @@ router.get("/:username/to", ensureCorrectUser, async function (req, res, next) {
 router.get("/:username/from", ensureCorrectUser, async function (req, res, next) {
   const username = req.params.username;
   const messages = await User.messagesFrom(username);
-  return res.json(messages);
+  return res.json({messages});
 });
 
 module.exports = router;
