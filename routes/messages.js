@@ -3,6 +3,9 @@
 const Router = require("express").Router;
 const router = new Router();
 
+const { ensureCorrectUser, ensureLoggedIn } = require("../middleware/auth");
+const Message = require('../models/message')
+
 /** GET /:id - get detail of message.
  *
  * => {message: {id,
@@ -16,13 +19,23 @@ const router = new Router();
  *
  **/
 
+router.get('/:id', ensureLoggedIn, ensureCorrectUser, async function (req, res, next){
+  const id = req.params.id;
+  const message = await Message.get(id);
+  return res.json(message)
+})
+
 
 /** POST / - post message.
  *
  * {to_username, body} =>
  *   {message: {id, from_username, to_username, body, sent_at}}
  *
- **/
+**/
+
+router.post('/', async function(req, res){
+
+})
 
 
 /** POST/:id/read - mark message as read:

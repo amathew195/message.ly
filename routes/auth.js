@@ -6,7 +6,7 @@ const { BadRequestError, UnauthorizedError } = require("../expressError");
 const jwt = require("jsonwebtoken");
 const { SECRET_KEY } = require("../config");
 const User = require("../models/user");
-const JWT_OPTIONS = { expiresIn : 3600 }; 
+const JWT_OPTIONS = { expiresIn : 3600 };
 
 const Router = require("express").Router;
 const router = new Router();
@@ -17,14 +17,12 @@ router.post("/login", async function (req, res, next){
 
     const { username, password } = req.body;
 
-    console.log(await User.authenticate(username, password) === true, "___________________________________AUTHENTICATE________")
     if(await User.authenticate(username, password) === true){
         const token = jwt.sign( { username } , SECRET_KEY );
         return res.json( { token } );
     } else {
         throw new UnauthorizedError("Invalid user/password");
     }
-
 })
 
 
