@@ -19,7 +19,7 @@ const Message = require('../models/message')
  *
  **/
 
-router.get('/:id', ensureLoggedIn, ensureCorrectUser, async function (req, res, next){
+router.get('/:id', ensureCorrectUser, async function (req, res, next){
   const id = req.params.id;
   const message = await Message.get(id);
   return res.json(message)
