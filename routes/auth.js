@@ -34,11 +34,10 @@ router.post("/login", async function (req, res, next){
 router.post("/register", async function(req, res, next) {
     if ( req.body === undefined ) throw new BadRequestError();
 
-    const user = await User.register(req.body);
+    const {username} = await User.register(req.body);
 
-    if(user){
-        let payload = { username : user.username}
-        const token = jwt.sign( payload, SECRET_KEY );
+    if(username){
+        const token = jwt.sign( { username } , SECRET_KEY );
         return res.json( { token } );
     } else {
         throw new BadRequestError("Invalid registration");

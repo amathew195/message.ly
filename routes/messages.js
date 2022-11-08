@@ -3,6 +3,7 @@
 const Router = require("express").Router;
 const router = new Router();
 
+const { UnauthorizedError } = require("../expressError");
 const { ensureCorrectUser, ensureLoggedIn } = require("../middleware/auth");
 const Message = require('../models/message')
 
@@ -19,9 +20,16 @@ const Message = require('../models/message')
  *
  **/
 
-router.get('/:id', ensureCorrectUser, async function (req, res, next){
+router.get('/:id',  ensureLoggedIn, async function (req, res, next){
+  const username = res.locals.user.username;
   const id = req.params.id;
   const message = await Message.get(id);
+  const fromUser = message.from_user.username;
+  const toUser = message.to_user.username;
+  if(username !== fromUser && username !== toUser){
+    throw new UnauthorizedError();
+  }
+
   return res.json(message)
 })
 
