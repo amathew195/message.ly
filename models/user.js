@@ -16,20 +16,30 @@ class User {
   static async register({ username, password, first_name, last_name, phone }) {
 
     const hashedPassword = await bcrypt.hash(password, BCRYPT_WORK_FACTOR);
-    const result = await db.query(
-      `INSERT INTO users (username,
-          password,
-          first_name,
-          last_name,
-          phone,
-          join_at,
-          last_login_at)
+    try{
+      const result = await db.query(
+        `INSERT INTO users (username,
+            password,
+            first_name,
+            last_name,
+            phone,
+            join_at,
+            last_login_at)
           VALUES
-          ($1, $2, $3, $4, $5, current_timestamp, current_timestamp) 
+            ( $1, 
+              $2, 
+              $3, 
+              $4, 
+              $5, 
+              current_timestamp, 
+              current_timestamp) 
           RETURNING username, password, first_name, last_name, phone`,
-      [username, hashedPassword, first_name, last_name, phone]
-    ); //NOTE: values and names in same style
-    //try..catch for this area. error handling here. Anything that interacts with server. Keep routes as simple as can be 
+        [username, hashedPassword, first_name, last_name, phone]
+      );
+    } catch (err) {
+      if (err instanceof IntegrityError) console.error("Invalid Username");
+      else console.error(err);
+    }
 
     return result.rows[0];
   }
@@ -44,10 +54,13 @@ class User {
       [username]
     );
     const user = result.rows[0];
-//TODO: check if username exists. Currently three possible return values. 
+
     if (user) {
       return await bcrypt.compare(password, user.password) === true;
+    } else {
+      return false;
     }
+
   }
 
   /** Update last_login_at for user */
@@ -72,11 +85,12 @@ class User {
   static async all() {
     const results = await db.query(
       `SELECT username, first_name, last_name
-      FROM users`
+      FROM users
+      ORDER BY last_name, first_name`
     );
     const users = results.rows;
     return users;
-  } //NOTE: ORDER BY due to long listing
+  } 
 
   /** Get: get user by username
    *
@@ -112,8 +126,14 @@ class User {
 
   static async messagesFrom(username) {
     const result = await db.query(
-      `SELECT m.id, m.body, m.sent_at, m.read_at, 
-        u.username, u.first_name, u.last_name, u.phone
+      `SELECT m.id, 
+              m.body, 
+              m.sent_at, 
+              m.read_at, 
+              u.username, 
+              u.first_name, 
+              u.last_name, 
+              u.phone
           FROM messages AS m
           JOIN users as u
               ON (m.to_username = u.username)
@@ -135,11 +155,8 @@ class User {
       }
     });
 
-    if (!messages) throw new NotFoundError(`No such username: ${username}`);
-
     return messages;
   }
-//Change error message. formatting for SELECT columns
 
   /** Return messages to this user.
    *
@@ -152,7 +169,14 @@ class User {
   static async messagesTo(username) {
 
     const results = await db.query(
-      `SELECT m.id, m.body, m.sent_at, m.read_at, u.username, u.first_name, u.last_name, u.phone
+      `SELECT m.id, 
+              m.body, 
+              m.sent_at, 
+              m.read_at, 
+              u.username, 
+              u.first_name, 
+              u.last_name, 
+              u.phone
           FROM messages AS m
           JOIN users as u
               ON (m.from_username = u.username)
@@ -173,8 +197,6 @@ class User {
         read_at: r.read_at
       };
     });
-
-    if (!messages) throw new NotFoundError(`No such username: ${username}`);
 
     return messages;
   }
