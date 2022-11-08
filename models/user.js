@@ -25,10 +25,11 @@ class User {
           join_at,
           last_login_at)
           VALUES
-          ($1, $2, $3, $4, $5, current_timestamp, current_timestamp)
+          ($1, $2, $3, $4, $5, current_timestamp, current_timestamp) 
           RETURNING username, password, first_name, last_name, phone`,
       [username, hashedPassword, first_name, last_name, phone]
-    );
+    ); //NOTE: values and names in same style
+    //try..catch for this area. error handling here. Anything that interacts with server. Keep routes as simple as can be 
 
     return result.rows[0];
   }
@@ -43,7 +44,7 @@ class User {
       [username]
     );
     const user = result.rows[0];
-
+//TODO: check if username exists. Currently three possible return values. 
     if (user) {
       return await bcrypt.compare(password, user.password) === true;
     }
@@ -75,7 +76,7 @@ class User {
     );
     const users = results.rows;
     return users;
-  }
+  } //NOTE: ORDER BY due to long listing
 
   /** Get: get user by username
    *
@@ -138,8 +139,8 @@ class User {
 
     return messages;
   }
+//Change error message. formatting for SELECT columns
 
-  
   /** Return messages to this user.
    *
    * [{id, from_user, body, sent_at, read_at}]
