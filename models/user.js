@@ -3,7 +3,7 @@
 const bcrypt = require('bcrypt');
 const { NotFoundError } = require("../expressError");
 const db = require('../db');
-const { SECRET_KEY, BCRYPT_WORK_FACTOR } = require("../config");
+const { BCRYPT_WORK_FACTOR } = require("../config");
 
 /** User of the site. */
 
@@ -16,6 +16,7 @@ class User {
   static async register({ username, password, first_name, last_name, phone }) {
 
     const hashedPassword = await bcrypt.hash(password, BCRYPT_WORK_FACTOR);
+
     try{
       const result = await db.query(
         `INSERT INTO users (username,
@@ -36,12 +37,11 @@ class User {
           RETURNING username, password, first_name, last_name, phone`,
         [username, hashedPassword, first_name, last_name, phone]
       );
+      return result.rows[0];
     } catch (err) {
       if (err instanceof IntegrityError) console.error("Invalid Username");
       else console.error(err);
     }
-
-    return result.rows[0];
   }
 
   /** Authenticate: is username/password valid? Returns boolean. */
